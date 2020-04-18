@@ -12,8 +12,9 @@ const useMap = () => {
   const thresholdColor = {
     "confirm": ['#fff5f0','#fee0d2','#fcbba1','#fc9272','#fb6a4a','#ef3b2c','#cb181d','#99000d'],
     "suspicious": ['#ffffe5','#fff7bc','#fee391','#fec44f','#fe9929','#ec7014','#cc4c02','#8c2d04']
-  }
-  const[ steps , setSteps] = React.useState([]);
+  };
+  const[ popup , setPopup] = React.useState(new mapboxgl.Popup({ closeOnClick: false, closeOnMove: true, closeButton: false,className: 'popup-map' }));
+
 
   const {statesConfirm,
          statesSuspicious, 
@@ -53,7 +54,7 @@ const useMap = () => {
 
   React.useEffect(() => {
     if(statesConfirm && statesSuspicious && statesGeOJSON) {  
-      let confirm = statesConfirm.map(stateMex => {
+      /*let confirm = statesConfirm.map(stateMex => {
         return stateMex.confirmados[state.date]; 
       });
       
@@ -62,13 +63,13 @@ const useMap = () => {
       
       let stepsList = thresholdsNum.map((num, i) => {
           return [Number(num), thresholdColor["confirm"][i]];
-      });
+      });*/
       
-     let fillColor = getSteps();
-     console.log(fillColor);
+      let fillColor = getSteps();
+     
       map.on('load', function() {
         let geojson = setUpGEOJson();
-        console.log(geojson);
+        
         map.addSource('pref', {
           type: 'geojson',
           data: geojson
@@ -78,10 +79,7 @@ const useMap = () => {
           'type': 'fill',
           'source': 'pref',
           'paint': {
-            'fill-color': {
-              'property': "confirmados-" + state.date,
-              'stops': stepsList
-            },
+            'fill-color': fillColor,
             'fill-opacity': [
                 'case',
                 ['boolean', ['feature-state', 'hover'], false],
@@ -100,13 +98,10 @@ const useMap = () => {
       let fillColor = getSteps();
       if(map.loaded() && map.isStyleLoaded()) {
         map.setPaintProperty('pref', 'fill-color', fillColor);
-      }
-
-      var popup = new mapboxgl.Popup({ closeOnClick: false, closeOnMove: true, className: 'popup-map' });
-
-      map.on("mousemove", (e) => {
-        showPopup(popup, e);
-      });        
+        map.on("mousemove", (e) => {
+          showPopup(e);
+        });
+      }     
     }
       
   }, [state]);
@@ -138,7 +133,7 @@ const useMap = () => {
     return fillColor;
   }
 
-  let showPopup = (popup, e) => {
+  let showPopup = (e) => {
     var features = map.queryRenderedFeatures(e.point, {
       layers: ["pref"]
     });
@@ -149,15 +144,18 @@ const useMap = () => {
       .setHTML(
         ` <label>Estado:</label>
           <span>${features[0].properties.ESTADO}</span>
+          <br>
           <label>Confirmados:</label>
-          <span>${statesConfirm[features[0].properties.CVE_ENT - 1].confirmados[state.date]}</span>
+          <span>${features[0].properties["confirmados-" + state.date]}</span>
           <br>
           <label>Sospechosos:</label>
-          <span>${statesSuspicious[features[0].properties.CVE_ENT - 1].sospechosos[state.date]}</span>
+          <span>${features[0].properties["sospechosos-" + state.date]}</span>
         `
         )
       .addTo(map);
-    } 
+    } else {
+      popup.remove();
+    }
   }
 
   let setUpGEOJson = () => {
@@ -178,7 +176,10 @@ const useMap = () => {
 
   return {
     mapRef,
-    stateMap
+    stateMap,
+    map,
+    showPopup,
+    popup
   }
 }
 

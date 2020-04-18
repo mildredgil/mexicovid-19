@@ -4,9 +4,9 @@ import { MapContext } from '../contexts/MapContext';
 import CustomizedSlider from './Slider';
 
 const Map = ({classes}) => {
-    const {stateMap, mapRef} = React.useContext(MapContext);
+    const {stateMap, mapRef, map, showPopup} = React.useContext(MapContext);
     const {lat, lng, zoom} = stateMap;
-    
+      
     return (
         <div>
           <div className={classes.sidebarStyle}>
